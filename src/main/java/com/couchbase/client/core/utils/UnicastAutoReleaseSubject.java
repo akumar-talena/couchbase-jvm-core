@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * @author Michael Nitschinger
  * @since 1.1.1
  */
-public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
+public class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
 
     private final State<T> state;
     private volatile Observable<Long> timeoutScheduler;
@@ -71,7 +71,7 @@ public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
         timeoutScheduler = Observable.empty();
     }
 
-    private UnicastAutoReleaseSubject(final State<T> state, long noSubscriptionTimeout, TimeUnit timeUnit,
+     protected UnicastAutoReleaseSubject(final State<T> state, long noSubscriptionTimeout, TimeUnit timeUnit,
         Scheduler scheduler) {
         super(new OnSubscribeAction<T>(state));
         this.state = state;
@@ -144,7 +144,7 @@ public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
     }
 
     /** The common state. */
-    private static final class State<T> {
+    public static final class State<T> {
 
         /**
          * Following are the only possible state transitions:

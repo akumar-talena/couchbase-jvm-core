@@ -38,6 +38,7 @@ import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
+import com.couchbase.client.core.utils.UnicastAutoReleaseSubject.State;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import io.netty.buffer.ByteBuf;
@@ -46,6 +47,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.ConcurrentSet;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.subjects.SerializedSubject;
@@ -77,13 +79,20 @@ public class DCPConnection {
     private final CoreEnvironment env;
     private final ConcurrentMap<Short, ChannelHandlerContext> contexts;
 
+//    public DCPConnection(final CoreEnvironment env, final ClusterFacade core, final String bucket, final String password) {
+//        this(env, core, bucket, password, UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(),
+//                TimeUnit.MILLISECONDS, env.scheduler()).toSerialized());
+//        System.out.println(">>>sec cons end");
+//    }
+
     public DCPConnection(final CoreEnvironment env, final ClusterFacade core, final String bucket, final String password) {
-        this(env, core, bucket, password, UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(),
-                TimeUnit.MILLISECONDS, env.scheduler()).toSerialized());
+        this(env, core, bucket, password, new tmpSubject<DCPRequest>(env).toSerialized());
+        System.out.println(">>>sec cons end");
     }
 
     public DCPConnection(final CoreEnvironment env, final ClusterFacade core, final String bucket, final String password,
                          final SerializedSubject<DCPRequest, DCPRequest> subject) {
+      System.out.println(">>> main cons start");
         this.env = env;
         this.core = core;
         this.subject = subject;
@@ -91,8 +100,38 @@ public class DCPConnection {
         this.password = password;
         this.streams = new ConcurrentSet<Short>();
         this.contexts = new ConcurrentHashMap<Short, ChannelHandlerContext>();
+        
+        Thread.dumpStack();
     }
 
+    private static class tmpSubject<T> extends UnicastAutoReleaseSubject<T> {
+      tmpSubject(CoreEnvironment env) {
+        super(new State<T>(null), env.autoreleaseAfter(), TimeUnit.MILLISECONDS, env.scheduler());
+      }
+//      public static <T> tmpSubject <T>create(CoreEnvironment env) {return new tmpSubject<T>(env);}
+
+      @Override
+      public void onCompleted() {
+        System.out.println(">>> tmpSubject oncompleted");
+        Thread.dumpStack();
+        super.onCompleted();
+      }
+
+      @Override
+      public void onError(Throwable e) {
+        System.out.println(">>> tmpSubject onError");
+        Thread.dumpStack();
+super.onError(e);
+      }
+
+      @Override
+      public void onNext(T t) {
+        System.out.println(">>> tmpSubject onNext");
+        Thread.dumpStack();
+        super.onNext(t);
+      }
+    }
+    
     public String bucket() {
         return bucket;
     }
